@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>SISTEM BERBAGI BALIK LAYAR (SBBL) - Cash Management System</title>
+  <meta name="description" content="Aplikasi Web Pengelolaan Kas Bersama Terpusat, Transparan & Akuntabel - Sistem Berbagi Balik Layar (SBBL)">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230284c7%22/><text y=%2265%22 x=%2250%22 text-anchor=%22middle%22 font-size=%2250%22 font-family=%22sans-serif%22 font-weight=%22bold%22 fill=%22white%22>SB</text></svg>">
+  <link rel="stylesheet" href="./css/style.css?v=2.1.0">
+  <!-- Official Supabase JS v2 Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Anti-flicker splash screen (PRD NFR-03 & FR-01) */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 20px;
+      text-align: center;
+    }
+    .splash-logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #0284c7, #14b8a6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 800;
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.5);
+      margin-bottom: 16px;
+    }
+    .splash-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-top: 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Initial Anti-Flicker Splash Screen -->
+  <div id="splash-screen">
+    <div class="splash-logo">SB</div>
+    <div style="font-size: 17px; font-weight: 700; letter-spacing: 0.5px;">SISTEM BERBAGI BALIK LAYAR</div>
+    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Memulihkan sesi dan memuat data kas...</div>
+    <div class="splash-spinner"></div>
+  </div>
+
+  <!-- Main Application Container -->
+  <div id="app-container"></div>
+
+  <script type="module">
+    // Hide splash screen smoothly after DOM & scripts load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.style.opacity = '0';
+          splash.style.visibility = 'hidden';
+          setTimeout(() => splash.remove(), 350);
+        }
+      }, 250);
+    });
+  </script>
+  <script type="module" src="./js/app.js?v=2.1.0"></script>
+</body>
+</html>

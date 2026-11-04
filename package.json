@@ -1,0 +1,13 @@
+{
+  "name": "sbbl-cash-management",
+  "version": "1.0.0",
+  "description": "Sistem Berbagi Balik Layar (SBBL) - Web-Based Cash Management System",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
