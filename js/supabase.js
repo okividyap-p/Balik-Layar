@@ -203,6 +203,9 @@ class SupabaseAdapter {
           if (item.key === 'bank_accounts' && Array.isArray(item.value)) {
             state.settings.bank_accounts = item.value;
           }
+          if (item.key === 'weekly_contribution_config' && item.value) {
+            state.settings.weekly_contribution_config = item.value;
+          }
         });
       }
 
@@ -644,6 +647,73 @@ class SupabaseAdapter {
     state.logAudit('UPDATE_SYSTEM_SETTINGS', 'system_settings', { key: 'opening_balance', amount: num });
     state.notify();
     return { success: true, message: 'Saldo awal berhasil diperbarui.' };
+  }
+
+  // ============================================================================
+  // UPDATE BANK ACCOUNTS (Super Admin only - enforced by RLS)
+  // ============================================================================
+  async updateBankAccounts(bankAccounts) {
+    if (!Array.isArray(bankAccounts) || bankAccounts.length === 0) {
+      throw new Error('Minimal harus ada 1 rekening bank.');
+    }
+    for (const acc of bankAccounts) {
+      if (!acc.bank_name?.trim() || !acc.account_number?.trim() || !acc.holder_name?.trim()) {
+        throw new Error('Nama bank, nomor rekening, dan atas nama wajib diisi untuk semua rekening.');
+      }
+    }
+
+    if (this.isLiveMode()) {
+      const { error } = await this.client
+        .from('system_settings')
+        .upsert({
+          key: 'bank_accounts',
+          value: bankAccounts,
+          updated_at: new Date().toISOString()
+        });
+      if (error) throw error;
+      await this.syncAllData();
+      return { success: true, message: 'Rekening bank berhasil diperbarui.' };
+    }
+
+    state.settings.bank_accounts = bankAccounts;
+    state.logAudit('UPDATE_BANK_ACCOUNTS', 'system_settings', { count: bankAccounts.length });
+    state.notify();
+    return { success: true, message: 'Rekening bank berhasil diperbarui.' };
+  }
+
+  // ============================================================================
+  // UPDATE SCHEDULE CONFIG (Super Admin only - enforced by RLS)
+  // ============================================================================
+  async updateScheduleConfig(config) {
+    const amount = Number(config.amount);
+    if (isNaN(amount) || amount <= 0) throw new Error('Nominal iuran harus lebih dari 0.');
+    if (!config.day?.trim()) throw new Error('Hari pelaksanaan wajib diisi.');
+    if (!config.time?.trim()) throw new Error('Waktu pelaksanaan wajib diisi.');
+
+    const newConfig = {
+      amount,
+      day: config.day.trim(),
+      time: config.time.trim(),
+      timezone: 'Asia/Makassar'
+    };
+
+    if (this.isLiveMode()) {
+      const { error } = await this.client
+        .from('system_settings')
+        .upsert({
+          key: 'weekly_contribution_config',
+          value: newConfig,
+          updated_at: new Date().toISOString()
+        });
+      if (error) throw error;
+      await this.syncAllData();
+      return { success: true, message: 'Konfigurasi jadwal iuran berhasil diperbarui.' };
+    }
+
+    state.settings.weekly_contribution_config = newConfig;
+    state.logAudit('UPDATE_SCHEDULE_CONFIG', 'system_settings', newConfig);
+    state.notify();
+    return { success: true, message: 'Konfigurasi jadwal iuran berhasil diperbarui.' };
   }
 }
 

@@ -859,19 +859,43 @@ class SBBLApp {
   // 4. DATA SOURCES VIEW
   renderDataSourcesView() {
     const isLive = supabaseAdapter.isLiveMode();
+    const user = state.currentUser;
+    const isSuperAdmin = user.role === 'super_admin';
 
     return `
+      <div class="formula-banner">
+        <div class="formula-text">
+          <strong>Sumber Data Kas:</strong>
+          Rekening bank resmi & konfigurasi database kas bersama SBBL. Hanya <strong>Super Admin</strong> yang dapat mengubah data ini.
+        </div>
+        ${isSuperAdmin ? `
+          <div style="font-size: 11.5px; color: var(--accent); font-weight: 600;">
+            ✓ Anda memiliki hak penuh untuk mengedit
+          </div>
+        ` : `
+          <div style="font-size: 11.5px; color: var(--text-muted);">
+            Hanya tampilan — pengeditan memerlukan hak Super Admin
+          </div>
+        `}
+      </div>
+
       <div class="dashboard-grid">
         <div class="card">
           <div class="card-header">
             <h3>Rekening Resmi Kas Bersama SBBL</h3>
+            ${isSuperAdmin ? `
+              <button class="btn btn-sm btn-primary" onclick="window.sbblApp.openEditBankAccountsModal()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Rekening Bank
+              </button>
+            ` : ''}
           </div>
           <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-            Seluruh mutasi dana kas bersama dialirkan melalui rekening bank & QRIS resmi yang telah disepakati bersama.
+            Seluruh mutasi dana kas bersama dialirkan melalui rekening bank &amp; QRIS resmi yang telah disepakati bersama.
           </p>
 
           <div style="display:flex; flex-direction:column; gap: 14px;">
-            ${state.settings.bank_accounts.map(acc => `
+            ${state.settings.bank_accounts.map((acc, idx) => `
               <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
                 <div>
                   <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${escapeHtml(acc.bank_name)}</div>
@@ -888,7 +912,7 @@ class SBBLApp {
 
         <div class="card">
           <div class="card-header">
-            <h3>Integrasi & Status Database Cloud</h3>
+            <h3>Integrasi &amp; Status Database Cloud</h3>
           </div>
           <div style="display:flex; flex-direction:column; gap: 14px;">
             <div style="background: var(--bg-card-subtle); border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--border-color);">
@@ -919,18 +943,51 @@ class SBBLApp {
                 • Kategori Kas: <strong>${state.categories.filter(c => c.is_active).length}</strong> aktif
               </div>
             </div>
+
+            <div style="background: var(--bg-card-subtle); border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--border-color);">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">Hak Akses Sistem:</div>
+              <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.9;">
+                • <span class="role-tag role-super_admin">super admin</span> — Semua akses + edit rekening & jadwal<br>
+                • <span class="role-tag role-admin">admin</span> — Transaksi, anggota, kategori, pengumuman<br>
+                • <span class="role-tag role-member">member</span> — Hanya lihat (read-only)
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
   }
 
-  // 5. SCHEDULED VIEW (FR-11)
   renderScheduledView() {
     const user = state.currentUser;
     const isManager = ['super_admin', 'admin'].includes(user.role);
+    const isSuperAdmin = user.role === 'super_admin';
+    const cfg = state.settings.weekly_contribution_config || { amount: 10000, day: 'Thursday', time: '09:00', timezone: 'Asia/Makassar' };
+
+    const dayLabels = {
+      'Monday': 'Senin', 'Tuesday': 'Selasa', 'Wednesday': 'Rabu',
+      'Thursday': 'Kamis', 'Friday': 'Jumat', 'Saturday': 'Sabtu', 'Sunday': 'Minggu'
+    };
 
     return `
+      ${isSuperAdmin ? `
+        <div class="formula-banner" style="background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(109,40,217,0.04)); border-color: rgba(124,58,237,0.25);">
+          <div class="formula-text">
+            <strong>Mode Super Admin:</strong> Anda dapat mengubah konfigurasi jadwal & nominal iuran kas bersama.
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="window.sbblApp.openEditScheduleModal()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Edit Konfigurasi Jadwal
+          </button>
+        </div>
+      ` : `
+        <div class="formula-banner">
+          <div class="formula-text">
+            <strong>Jadwal Iuran Kas:</strong> Konfigurasi jadwal iuran mingguan. Hanya <strong>Super Admin</strong> yang dapat mengubah pengaturan ini.
+          </div>
+        </div>
+      `}
+
       <div class="card" style="margin-bottom: 24px;">
         <div class="card-header">
           <h3>
@@ -943,13 +1000,13 @@ class SBBLApp {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
           <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <div style="font-size: 11.5px; color: var(--text-muted); text-transform: uppercase;">Nominal Iuran</div>
-            <div style="font-size: 18px; font-weight: 800; color: var(--primary); margin-top: 4px;">Rp 10.000 / minggu</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--primary); margin-top: 4px;">Rp ${Number(cfg.amount || 10000).toLocaleString('id-ID')} / minggu</div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Per anggota approved</div>
           </div>
 
           <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-            <div style="font-size: 11.5px; color: var(--text-muted); text-transform: uppercase;">Hari & Waktu Eksekusi</div>
-            <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-top: 4px;">Setiap Kamis, 09.00</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); text-transform: uppercase;">Hari &amp; Waktu Eksekusi</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-top: 4px;">Setiap ${dayLabels[cfg.day] || cfg.day}, ${cfg.time || '09:00'}</div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Zona waktu: Asia/Makassar (WITA)</div>
           </div>
 
@@ -982,38 +1039,29 @@ class SBBLApp {
         <div class="card-header">
           <h3>Riwayat Eksekusi Penjadwalan (Delivery Logs)</h3>
         </div>
-
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Waktu Eksekusi</th>
-                <th>Nama Pekerjaan</th>
+                <th>Job Name</th>
+                <th>Waktu Eksekusi (WITA)</th>
                 <th>Status</th>
-                <th>Jumlah Penerima</th>
-                <th>Kunci Idempotensi</th>
-                <th>Rincian</th>
+                <th>Penerima</th>
+                <th>Keterangan</th>
               </tr>
             </thead>
             <tbody>
               ${state.deliveryLogs.length === 0 ? `
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
-                    Belum ada riwayat pengiriman terjadwal.
-                  </td>
-                </tr>
+                <tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  Belum ada riwayat eksekusi penjadwalan.
+                </td></tr>
               ` : state.deliveryLogs.map(log => `
                 <tr>
-                  <td style="white-space: nowrap;">${formatDateWITA(log.executed_at)}</td>
-                  <td style="font-weight: 600;">${escapeHtml(log.job_name)}</td>
-                  <td>
-                    <span class="badge ${log.status === 'success' ? 'badge-success' : 'badge-danger'}">
-                      ${log.status}
-                    </span>
-                  </td>
+                  <td><code style="font-size: 12px;">${escapeHtml(log.job_name)}</code></td>
+                  <td style="white-space: nowrap;">${formatDateWITA(log.executed_at || log.created_at)}</td>
+                  <td><span class="badge ${log.status === 'success' ? 'badge-success' : log.status === 'running' ? 'badge-info' : 'badge-danger'}">${log.status}</span></td>
                   <td>${log.recipients_count} anggota</td>
-                  <td><code style="font-size: 11px;">${escapeHtml(log.idempotency_key || '-')}</code></td>
-                  <td style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(log.details)}</td>
+                  <td style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(log.details || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1571,6 +1619,104 @@ class SBBLApp {
       </div>
 
       ${this.renderSupabaseSetupModal()}
+
+      <!-- Modal: Edit Bank Accounts (Super Admin only) -->
+      <div class="modal-backdrop" id="modal-edit-bank-accounts">
+        <div class="modal-window" style="max-width: 600px;">
+          <div class="modal-header">
+            <h3>Edit Rekening Bank Kas SBBL</h3>
+            <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-edit-bank-accounts')">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form id="form-edit-bank-accounts" onsubmit="window.sbblApp.handleEditBankAccountsSubmit(event)">
+            <div class="modal-body">
+              <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px; padding: 10px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-md);">
+                Kelola rekening bank / QRIS resmi kas bersama SBBL. Nomor rekening ini akan ditampilkan kepada seluruh anggota.
+              </div>
+              <div id="bank-accounts-editor">
+                ${state.settings.bank_accounts.map((acc, idx) => `
+                  <div class="bank-account-row" data-idx="${idx}" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                      <strong style="font-size: 13px;">Rekening #${idx + 1}</strong>
+                      <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">Hapus</button>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Nama Bank / Metode</label>
+                        <input type="text" class="form-control bank-name-input" value="${escapeHtml(acc.bank_name)}" placeholder="Contoh: Bank BCA" required>
+                      </div>
+                      <div class="form-group">
+                        <label>Nomor Rekening / ID</label>
+                        <input type="text" class="form-control bank-number-input" value="${escapeHtml(acc.account_number)}" placeholder="Contoh: 1234567890" required>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Atas Nama</label>
+                      <input type="text" class="form-control bank-holder-input" value="${escapeHtml(acc.holder_name)}" placeholder="Contoh: KAS BERSAMA SBBL" required>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.sbblApp.addBankAccountRow()" style="width: 100%; margin-top: 4px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Rekening Baru
+              </button>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-edit-bank-accounts')">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Schedule Config (Super Admin only) -->
+      <div class="modal-backdrop" id="modal-edit-schedule">
+        <div class="modal-window" style="max-width: 480px;">
+          <div class="modal-header">
+            <h3>Edit Konfigurasi Jadwal Iuran</h3>
+            <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-edit-schedule')">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form id="form-edit-schedule" onsubmit="window.sbblApp.handleEditScheduleSubmit(event)">
+            <div class="modal-body">
+              <div style="font-size: 12.5px; color: var(--warning); background: var(--warning-bg); padding: 10px 12px; border-radius: var(--radius-md); margin-bottom: 16px; border-left: 3px solid var(--warning);">
+                <strong>Perhatian:</strong> Perubahan konfigurasi jadwal akan mempengaruhi nominal iuran yang tertera pada pengingat otomatis seluruh anggota.
+              </div>
+              <div class="form-group">
+                <label>Nominal Iuran per Anggota (IDR) <span class="required">*</span></label>
+                <input type="number" class="form-control" id="modal-schedule-amount" min="1000" step="1000" value="${(state.settings.weekly_contribution_config || {}).amount || 10000}" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Hari Pelaksanaan <span class="required">*</span></label>
+                  <select class="form-control" id="modal-schedule-day">
+                    ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => {
+                      const labels = { Monday:'Senin', Tuesday:'Selasa', Wednesday:'Rabu', Thursday:'Kamis', Friday:'Jumat', Saturday:'Sabtu', Sunday:'Minggu' };
+                      const curDay = (state.settings.weekly_contribution_config || {}).day || 'Thursday';
+                      return `<option value="${d}" ${curDay === d ? 'selected' : ''}>${labels[d]}</option>`;
+                    }).join('')}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Waktu Pelaksanaan (WITA) <span class="required">*</span></label>
+                  <input type="time" class="form-control" id="modal-schedule-time" value="${(state.settings.weekly_contribution_config || {}).time || '09:00'}" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Zona Waktu</label>
+                <input type="text" class="form-control" value="Asia/Makassar (WITA)" disabled>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-edit-schedule')">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan Konfigurasi</button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
   }
 
@@ -2030,6 +2176,108 @@ class SBBLApp {
     a.click();
     URL.revokeObjectURL(url);
     showToast('File laporan CSV berhasil diunduh.', 'success');
+  }
+
+  openEditBankAccountsModal() {
+    openModal('modal-edit-bank-accounts');
+  }
+
+  openEditScheduleModal() {
+    openModal('modal-edit-schedule');
+  }
+
+  addBankAccountRow() {
+    const editor = document.getElementById('bank-accounts-editor');
+    if (!editor) return;
+    const idx = editor.querySelectorAll('.bank-account-row').length;
+    const row = document.createElement('div');
+    row.className = 'bank-account-row';
+    row.dataset.idx = idx;
+    row.style.cssText = 'background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;';
+    row.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <strong style="font-size: 13px;">Rekening #${idx + 1}</strong>
+        <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">Hapus</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nama Bank / Metode</label>
+          <input type="text" class="form-control bank-name-input" placeholder="Contoh: Bank BCA" required>
+        </div>
+        <div class="form-group">
+          <label>Nomor Rekening / ID</label>
+          <input type="text" class="form-control bank-number-input" placeholder="Contoh: 1234567890" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Atas Nama</label>
+        <input type="text" class="form-control bank-holder-input" placeholder="Contoh: KAS BERSAMA SBBL" required>
+      </div>
+    `;
+    editor.appendChild(row);
+  }
+
+  removeBankAccountRow(idx) {
+    const editor = document.getElementById('bank-accounts-editor');
+    if (!editor) return;
+    const rows = editor.querySelectorAll('.bank-account-row');
+    if (rows.length <= 1) {
+      showToast('Minimal harus ada 1 rekening bank.', 'warning');
+      return;
+    }
+    rows[idx]?.remove();
+    // Re-index labels
+    editor.querySelectorAll('.bank-account-row').forEach((row, i) => {
+      const label = row.querySelector('strong');
+      if (label) label.textContent = `Rekening #${i + 1}`;
+    });
+  }
+
+  async handleEditBankAccountsSubmit(e) {
+    e.preventDefault();
+    try {
+      const user = state.currentUser;
+      if (user.role !== 'super_admin') {
+        showToast('Hanya Super Admin yang dapat mengubah rekening bank.', 'danger');
+        return;
+      }
+      const rows = document.querySelectorAll('#bank-accounts-editor .bank-account-row');
+      const bankAccounts = [];
+      rows.forEach(row => {
+        const bank_name = row.querySelector('.bank-name-input')?.value?.trim();
+        const account_number = row.querySelector('.bank-number-input')?.value?.trim();
+        const holder_name = row.querySelector('.bank-holder-input')?.value?.trim();
+        if (bank_name && account_number && holder_name) {
+          bankAccounts.push({ bank_name, account_number, holder_name });
+        }
+      });
+      const res = await supabaseAdapter.updateBankAccounts(bankAccounts);
+      closeModal('modal-edit-bank-accounts');
+      showToast(res.message, 'success');
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async handleEditScheduleSubmit(e) {
+    e.preventDefault();
+    try {
+      const user = state.currentUser;
+      if (user.role !== 'super_admin') {
+        showToast('Hanya Super Admin yang dapat mengubah konfigurasi jadwal.', 'danger');
+        return;
+      }
+      const config = {
+        amount: document.getElementById('modal-schedule-amount').value,
+        day: document.getElementById('modal-schedule-day').value,
+        time: document.getElementById('modal-schedule-time').value
+      };
+      const res = await supabaseAdapter.updateScheduleConfig(config);
+      closeModal('modal-edit-schedule');
+      showToast(res.message, 'success');
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
   }
 
   copyFeedback() {
