@@ -1248,7 +1248,7 @@ class SBBLApp {
     return `
       <div class="filters-bar" style="justify-content: space-between;">
         <div style="font-size: 13px; color: var(--text-secondary);">
-          Kelola kategori kas. Kategori aktif akan tersedia pada formulir pencatatan kas.
+          Kelola kategori kas. Kategori aktif akan tersedia pada formulir pencatatan kas. Tampilan disusun vertikal (atas &amp; bawah) agar mudah dibaca dan diedit langsung.
         </div>
         ${isManager ? `
           <button class="btn btn-primary" onclick="window.sbblApp.openAddCategoryModal()">
@@ -1258,13 +1258,20 @@ class SBBLApp {
         ` : ''}
       </div>
 
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <h3>
-              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
-              Kategori Pemasukan Kas
+      <div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
+        <!-- Kategori Pemasukan Kas (Atas) -->
+        <div class="card" style="width: 100%;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+              Kategori Pemasukan Kas (${state.categories.filter(c => c.type === 'income').length})
             </h3>
+            ${isManager ? `
+              <button class="btn btn-sm btn-success" onclick="window.sbblApp.openAddCategoryModal('income')">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Kategori Pemasukan
+              </button>
+            ` : ''}
           </div>
           <table class="data-table">
             <thead>
@@ -1288,6 +1295,9 @@ class SBBLApp {
                         <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
                           ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="window.sbblApp.deleteCategory('${c.id}')" title="Hapus Kategori">
+                          Hapus
+                        </button>
                       </div>
                     </td>
                   ` : ''}
@@ -1297,12 +1307,19 @@ class SBBLApp {
           </table>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3>
-              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
-              Kategori Pengeluaran Kas
+        <!-- Kategori Pengeluaran Kas (Bawah) -->
+        <div class="card" style="width: 100%;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
+              Kategori Pengeluaran Kas (${state.categories.filter(c => c.type === 'expense').length})
             </h3>
+            ${isManager ? `
+              <button class="btn btn-sm btn-danger" onclick="window.sbblApp.openAddCategoryModal('expense')">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Kategori Pengeluaran
+              </button>
+            ` : ''}
           </div>
           <table class="data-table">
             <thead>
@@ -1325,6 +1342,9 @@ class SBBLApp {
                         </button>
                         <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
                           ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="window.sbblApp.deleteCategory('${c.id}')" title="Hapus Kategori">
+                          Hapus
                         </button>
                       </div>
                     </td>
@@ -1510,12 +1530,21 @@ class SBBLApp {
         <div class="modal-window">
           <div class="modal-header">
             <h3 id="modal-tx-title">Catat Transaksi Kas</h3>
-            <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-create-tx')">
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.sbblApp.promptEditRecentTx()" title="Pilih transaksi terbaru untuk diedit" style="font-size: 11px; padding: 3px 8px;">
+                ✏️ Edit Transaksi Terakhir
+              </button>
+              <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-create-tx')">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
           </div>
           <form id="form-create-tx" onsubmit="window.sbblApp.handleCreateTxSubmit(event)">
             <div class="modal-body">
+              <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <span>💡 <strong>Fitur Edit Langsung:</strong> Anda dapat mengedit / menambah bank &amp; kategori langsung di form ini tanpa membuka VS Code.</span>
+              </div>
+
               <div class="type-toggle-container">
                 <button type="button" class="type-toggle-btn active income" id="btn-toggle-type-income" onclick="window.sbblApp.setModalTxType('income')">Pemasukan (+)</button>
                 <button type="button" class="type-toggle-btn expense" id="btn-toggle-type-expense" onclick="window.sbblApp.setModalTxType('expense')">Pengeluaran (-)</button>
@@ -1534,7 +1563,13 @@ class SBBLApp {
               </div>
 
               <div class="form-group">
-                <label>Kategori Kas <span class="required">*</span></label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="margin-bottom: 0;">Kategori Kas <span class="required">*</span></label>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.openAddCategoryModal(document.getElementById('modal-tx-type').value)">+ Tambah Kategori</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.editSelectedTxCategory('modal-tx-category')" title="Edit nama kategori yang sedang dipilih">✏️ Edit Kategori Ini</button>
+                  </div>
+                </div>
                 <select class="form-control" id="modal-tx-category" required></select>
               </div>
 
@@ -1549,7 +1584,10 @@ class SBBLApp {
                   <input type="text" class="form-control" id="modal-tx-counterparty" required placeholder="Nama pembayar atau penerima">
                 </div>
                 <div class="form-group">
-                  <label>Metode Pembayaran / Sumber Kas <span class="required">*</span></label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="margin-bottom: 0;">Metode Pembayaran / Sumber Kas <span class="required">*</span></label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.openEditBankAccountsModal()">⚙️ Kelola / Edit Bank</button>
+                  </div>
                   <select class="form-control" id="modal-tx-payment-method" onchange="window.sbblApp.handlePaymentMethodChange(this, 'create')">
                   </select>
                   <input type="text" class="form-control" id="modal-tx-custom-payment-method" placeholder="Ketik nama bank/metode baru (misal: Bank SeaBank)..." style="display: none; margin-top: 8px;">
@@ -1581,6 +1619,10 @@ class SBBLApp {
           <form id="form-edit-tx" onsubmit="window.sbblApp.handleEditTxSubmit(event)">
             <input type="hidden" id="modal-edit-tx-id">
             <div class="modal-body">
+              <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <span>✏️ <strong>Edit Transaksi:</strong> Anda dapat mengubah tanggal, nominal, kategori, rekening bank, maupun keterangan transaksi ini secara langsung.</span>
+              </div>
+
               <div class="type-toggle-container">
                 <button type="button" class="type-toggle-btn active income" id="btn-edit-toggle-type-income" onclick="window.sbblApp.setModalEditTxType('income')">Pemasukan (+)</button>
                 <button type="button" class="type-toggle-btn expense" id="btn-edit-toggle-type-expense" onclick="window.sbblApp.setModalEditTxType('expense')">Pengeluaran (-)</button>
@@ -1599,7 +1641,13 @@ class SBBLApp {
               </div>
 
               <div class="form-group">
-                <label>Kategori Kas <span class="required">*</span></label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="margin-bottom: 0;">Kategori Kas <span class="required">*</span></label>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.openAddCategoryModal(document.getElementById('modal-edit-tx-type').value)">+ Tambah Kategori</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.editSelectedTxCategory('modal-edit-tx-category')" title="Edit nama kategori yang sedang dipilih">✏️ Edit Kategori Ini</button>
+                  </div>
+                </div>
                 <select class="form-control" id="modal-edit-tx-category" required></select>
               </div>
 
@@ -1614,7 +1662,10 @@ class SBBLApp {
                   <input type="text" class="form-control" id="modal-edit-tx-counterparty" required placeholder="Nama pembayar atau penerima">
                 </div>
                 <div class="form-group">
-                  <label>Metode Pembayaran / Rekening Bank <span class="required">*</span></label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="margin-bottom: 0;">Metode Pembayaran / Rekening Bank <span class="required">*</span></label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;" onclick="window.sbblApp.openEditBankAccountsModal()">⚙️ Kelola / Edit Bank</button>
+                  </div>
                   <select class="form-control" id="modal-edit-tx-payment-method" onchange="window.sbblApp.handlePaymentMethodChange(this, 'edit')">
                   </select>
                   <input type="text" class="form-control" id="modal-edit-tx-custom-payment-method" placeholder="Ketik nama bank/metode baru (misal: Bank SeaBank)..." style="display: none; margin-top: 8px;">
@@ -2124,6 +2175,61 @@ class SBBLApp {
     }
   }
 
+  promptEditRecentTx() {
+    const activeTxs = state.transactions.filter(t => t.status !== 'void');
+    if (activeTxs.length === 0) {
+      showToast('Belum ada transaksi aktif untuk diedit.', 'info');
+      return;
+    }
+    const latestTx = activeTxs[0];
+    closeModal('modal-create-tx');
+    this.openEditTxModal(latestTx.id);
+  }
+
+  editSelectedTxCategory(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel || !sel.value) {
+      showToast('Pilih kategori yang ingin diedit terlebih dahulu.', 'warning');
+      return;
+    }
+    this.openEditCategoryModal(sel.value);
+  }
+
+  refreshTxCategoryDropdowns() {
+    const createType = document.getElementById('modal-tx-type')?.value || 'income';
+    const catSelect = document.getElementById('modal-tx-category');
+    if (catSelect) {
+      const curVal = catSelect.value;
+      const activeCats = state.categories.filter(c => c.type === createType && c.is_active);
+      catSelect.innerHTML = activeCats.map(c => `
+        <option value="${c.id}" ${c.id === curVal ? 'selected' : ''}>${escapeHtml(c.name)}</option>
+      `).join('');
+    }
+
+    const editType = document.getElementById('modal-edit-tx-type')?.value || 'income';
+    const editCatSelect = document.getElementById('modal-edit-tx-category');
+    if (editCatSelect) {
+      const curVal = editCatSelect.value;
+      const activeCats = state.categories.filter(c => c.type === editType && c.is_active);
+      editCatSelect.innerHTML = activeCats.map(c => `
+        <option value="${c.id}" ${c.id === curVal ? 'selected' : ''}>${escapeHtml(c.name)}</option>
+      `).join('');
+    }
+  }
+
+  refreshTxPaymentMethodDropdowns() {
+    const createPm = document.getElementById('modal-tx-payment-method');
+    if (createPm) {
+      const curVal = createPm.value;
+      createPm.innerHTML = this.renderPaymentMethodOptions(curVal);
+    }
+    const editPm = document.getElementById('modal-edit-tx-payment-method');
+    if (editPm) {
+      const curVal = editPm.value;
+      editPm.innerHTML = this.renderPaymentMethodOptions(curVal);
+    }
+  }
+
   openCreateTxModal(type = 'income') {
     this.setModalTxType(type);
     const pmSelect = document.getElementById('modal-tx-payment-method');
@@ -2370,7 +2476,11 @@ class SBBLApp {
     }
   }
 
-  openAddCategoryModal() {
+  openAddCategoryModal(defaultType = 'income') {
+    const typeEl = document.getElementById('modal-cat-type');
+    if (typeEl && defaultType) {
+      typeEl.value = defaultType;
+    }
     openModal('modal-add-category');
   }
 
@@ -2384,6 +2494,8 @@ class SBBLApp {
       closeModal('modal-add-category');
       showToast('Kategori baru berhasil ditambahkan.', 'success');
       e.target.reset();
+      this.refreshTxCategoryDropdowns();
+      this.render();
     } catch (err) {
       showToast(err.message, 'danger');
     }
@@ -2393,6 +2505,8 @@ class SBBLApp {
     try {
       const res = await supabaseAdapter.toggleCategoryStatus(categoryId);
       showToast(`Status kategori diperbarui (${res.is_active ? 'Aktif' : 'Non-Aktif'}).`, 'info');
+      this.refreshTxCategoryDropdowns();
+      this.render();
     } catch (err) {
       showToast(err.message, 'danger');
     }
@@ -2417,6 +2531,23 @@ class SBBLApp {
       const res = await supabaseAdapter.updateCategory(catId, name, type);
       closeModal('modal-edit-category');
       showToast(res.message, 'success');
+      this.refreshTxCategoryDropdowns();
+      this.render();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async deleteCategory(catId) {
+    const cat = state.categories.find(c => c.id === catId);
+    if (!cat) return;
+    if (!confirm(`Hapus kategori "${cat.name}"? Pastikan tidak ada transaksi aktif yang menggunakannya.`)) return;
+
+    try {
+      const res = await supabaseAdapter.deleteCategory(catId);
+      showToast(res.message, 'info');
+      this.refreshTxCategoryDropdowns();
+      this.render();
     } catch (err) {
       showToast(err.message, 'danger');
     }
@@ -2600,6 +2731,7 @@ class SBBLApp {
     try {
       const res = await supabaseAdapter.updateBankAccounts(newAccounts);
       showToast(`Metode pembayaran "${target.bank_name}" berhasil dihapus.`, 'info');
+      this.refreshTxPaymentMethodDropdowns();
       this.render();
     } catch (err) {
       showToast(err.message, 'danger');
@@ -2631,6 +2763,7 @@ class SBBLApp {
       const res = await supabaseAdapter.updateBankAccounts(bankAccounts);
       closeModal('modal-edit-bank-accounts');
       showToast('Metode pembayaran berhasil disimpan dan disinkronkan.', 'success');
+      this.refreshTxPaymentMethodDropdowns();
       this.render();
     } catch (err) {
       showToast(err.message, 'danger');

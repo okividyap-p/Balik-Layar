@@ -731,6 +731,37 @@ class SupabaseAdapter {
     return { success: true, message: 'Kategori berhasil diperbarui.' };
   }
 
+  async deleteCategory(categoryId) {
+    const user = state.currentUser;
+    if (!user || !['super_admin', 'admin'].includes(user.role)) {
+      throw new Error('Hanya pengelola yang berhak menghapus kategori.');
+    }
+
+    const cat = state.categories.find(c => c.id === categoryId);
+    if (!cat) throw new Error('Kategori tidak ditemukan.');
+
+    const isUsed = state.transactions.some(t => t.category_id === categoryId && t.status !== 'void');
+    if (isUsed) {
+      throw new Error(`Kategori "${cat.name}" sedang digunakan oleh transaksi aktif. Anda dapat menonaktifkannya agar tidak muncul pada input transaksi baru.`);
+    }
+
+    if (this.isLiveMode()) {
+      const { error } = await this.client
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+      await this.syncAllData();
+      return { success: true, message: `Kategori "${cat.name}" berhasil dihapus.` };
+    }
+
+    state.categories = state.categories.filter(c => c.id !== categoryId);
+    state.logAudit('DELETE_CATEGORY', 'categories', { id: categoryId, name: cat.name });
+    state.notify();
+    return { success: true, message: `Kategori "${cat.name}" berhasil dihapus.` };
+  }
+
   async updateOpeningBalance(amount) {
     const num = Number(amount);
     if (isNaN(num) || num < 0) throw new Error('Saldo awal harus positif atau 0.');
