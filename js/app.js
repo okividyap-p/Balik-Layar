@@ -516,12 +516,13 @@ class SBBLApp {
                 <th>Metode</th>
                 <th>Nominal</th>
                 <th>Status</th>
+                ${isManager ? `<th style="text-align: right;">Aksi</th>` : ''}
               </tr>
             </thead>
             <tbody>
               ${recentTx.length === 0 ? `
                 <tr>
-                  <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                  <td colspan="${isManager ? 7 : 6}" style="text-align: center; padding: 32px; color: var(--text-muted);">
                     Belum ada transaksi kas yang dicatat.
                   </td>
                 </tr>
@@ -545,6 +546,23 @@ class SBBLApp {
                         ${isVoid ? 'Dibatalkan' : 'Aktif'}
                       </span>
                     </td>
+                    ${isManager ? `
+                      <td style="text-align: right; white-space: nowrap;">
+                        ${!isVoid ? `
+                          <div style="display: inline-flex; gap: 6px;">
+                            <button class="btn btn-sm btn-primary" onclick="window.sbblApp.openEditTxModal('${t.id}')" title="Edit Transaksi Ini">
+                              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                              Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="window.sbblApp.openVoidTxModal('${t.id}')" title="Batalkan Transaksi (Void)">
+                              Void
+                            </button>
+                          </div>
+                        ` : `
+                          <span style="font-size: 11px; color: var(--text-muted);">Voided</span>
+                        `}
+                      </td>
+                    ` : ''}
                   </tr>
                 `;
               }).join('')}
@@ -664,7 +682,7 @@ class SBBLApp {
                       <td style="text-align: right; white-space: nowrap;">
                         ${!isVoid ? `
                           <div style="display: inline-flex; gap: 6px;">
-                            <button class="btn btn-sm btn-outline-primary" onclick="window.sbblApp.openEditTxModal('${t.id}')" title="Edit Rincian Transaksi">
+                            <button class="btn btn-sm btn-primary" onclick="window.sbblApp.openEditTxModal('${t.id}')" title="Edit Rincian Transaksi">
                               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                               Edit
                             </button>
