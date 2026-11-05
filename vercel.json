@@ -1,6 +1,8 @@
 {
   "version": 2,
-  "name": "sbbl-cash-management",
+  "framework": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "headers": [
     {
