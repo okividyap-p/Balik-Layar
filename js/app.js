@@ -867,21 +867,21 @@ class SBBLApp {
   renderDataSourcesView() {
     const isLive = supabaseAdapter.isLiveMode();
     const user = state.currentUser;
-    const isSuperAdmin = user.role === 'super_admin';
+    const isManager = ['super_admin', 'admin'].includes(user.role);
 
     return `
       <div class="formula-banner">
         <div class="formula-text">
-          <strong>Sumber Data Kas:</strong>
-          Rekening bank resmi & konfigurasi database kas bersama SBBL. Hanya <strong>Super Admin</strong> yang dapat mengubah data ini.
+          <strong>Rekening Kas & Metode Pembayaran:</strong>
+          Rekening resmi penerimaan & pengeluaran kas bersama SBBL. Pengelola kas dapat menambah bank baru (seperti SeaBank), mengedit, atau menghapus metode yang tidak terpakai langsung di sistem.
         </div>
-        ${isSuperAdmin ? `
+        ${isManager ? `
           <div style="font-size: 11.5px; color: var(--accent); font-weight: 600;">
-            ✓ Anda memiliki hak penuh untuk mengedit
+            ✓ Anda memiliki hak kelola rekening & metode pembayaran
           </div>
         ` : `
           <div style="font-size: 11.5px; color: var(--text-muted);">
-            Hanya tampilan — pengeditan memerlukan hak Super Admin
+            Hanya tampilan — pengeditan memerlukan hak pengelola (Admin / Super Admin)
           </div>
         `}
       </div>
@@ -889,29 +889,39 @@ class SBBLApp {
       <div class="dashboard-grid">
         <div class="card">
           <div class="card-header">
-            <h3>Rekening Resmi Kas Bersama SBBL</h3>
-            ${isSuperAdmin ? `
+            <h3>Rekening Kas & Metode Pembayaran (${state.settings.bank_accounts.length})</h3>
+            ${isManager ? `
               <button class="btn btn-sm btn-primary" onclick="window.sbblApp.openEditBankAccountsModal()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Edit Rekening Bank
+                Kelola Metode Pembayaran
               </button>
             ` : ''}
           </div>
           <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-            Seluruh mutasi dana kas bersama dialirkan melalui rekening bank &amp; QRIS resmi yang telah disepakati bersama.
+            Seluruh mutasi kas bersama dialirkan melalui rekening bank &amp; metode pembayaran aktif di bawah ini. Anda dapat menghapus metode yang tidak terpakai atau menambahkan metode baru.
           </p>
 
           <div style="display:flex; flex-direction:column; gap: 14px;">
             ${state.settings.bank_accounts.map((acc, idx) => `
-              <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
+              <div style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
                 <div>
-                  <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${escapeHtml(acc.bank_name)}</div>
+                  <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    ${escapeHtml(acc.bank_name)}
+                    <span class="badge badge-success" style="font-size: 10px;">Aktif</span>
+                  </div>
                   <div style="font-family: monospace; font-size: 16px; font-weight: 700; color: var(--primary); margin: 4px 0;">${escapeHtml(acc.account_number)}</div>
                   <div style="font-size: 12px; color: var(--text-muted);">Atas Nama: <strong>${escapeHtml(acc.holder_name)}</strong></div>
                 </div>
-                <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${acc.account_number}'); window.sbblApp.copyFeedback()">
-                  Salin No. Rekening
-                </button>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${acc.account_number}'); window.sbblApp.copyFeedback()">
+                    Salin No. Rekening
+                  </button>
+                  ${isManager ? `
+                    <button class="btn btn-sm btn-danger" onclick="window.sbblApp.deleteBankAccount(${idx})" title="Hapus metode pembayaran ini">
+                      Hapus
+                    </button>
+                  ` : ''}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1501,7 +1511,7 @@ class SBBLApp {
                 </div>
                 <div class="form-group">
                   <label>Nominal Rupiah (Rp) <span class="required">*</span></label>
-                  <input type="number" min="1" step="1000" class="form-control" id="modal-tx-amount" required placeholder="Contoh: 50000">
+                  <input type="number" min="1000" step="1000" class="form-control" id="modal-tx-amount" required placeholder="Contoh: 10000">
                 </div>
               </div>
 
@@ -1566,7 +1576,7 @@ class SBBLApp {
                 </div>
                 <div class="form-group">
                   <label>Nominal Rupiah (Rp) <span class="required">*</span></label>
-                  <input type="number" min="1" step="1000" class="form-control" id="modal-edit-tx-amount" required placeholder="Contoh: 50000">
+                  <input type="number" min="1000" step="1000" class="form-control" id="modal-edit-tx-amount" required placeholder="Contoh: 10000">
                 </div>
               </div>
 
@@ -1756,11 +1766,11 @@ class SBBLApp {
 
       ${this.renderSupabaseSetupModal()}
 
-      <!-- Modal: Edit Bank Accounts (Super Admin only) -->
+      <!-- Modal: Edit Bank Accounts & Metode Pembayaran -->
       <div class="modal-backdrop" id="modal-edit-bank-accounts">
         <div class="modal-window" style="max-width: 600px;">
           <div class="modal-header">
-            <h3>Edit Rekening Bank Kas SBBL</h3>
+            <h3>Kelola Rekening Bank & Metode Pembayaran Kas</h3>
             <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-edit-bank-accounts')">
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -1768,40 +1778,19 @@ class SBBLApp {
           <form id="form-edit-bank-accounts" onsubmit="window.sbblApp.handleEditBankAccountsSubmit(event)">
             <div class="modal-body">
               <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px; padding: 10px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-md);">
-                Kelola rekening bank / QRIS resmi kas bersama SBBL. Nomor rekening ini akan ditampilkan kepada seluruh anggota.
+                Tambahkan rekening baru (seperti <strong>Bank SeaBank</strong>), ubah nomor rekening/nama, atau hapus metode pembayaran yang tidak digunakan. Seluruh perubahan akan otomatis tersinkron ke formulir transaksi kas.
               </div>
               <div id="bank-accounts-editor">
-                ${state.settings.bank_accounts.map((acc, idx) => `
-                  <div class="bank-account-row" data-idx="${idx}" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                      <strong style="font-size: 13px;">Rekening #${idx + 1}</strong>
-                      <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">Hapus</button>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label>Nama Bank / Metode</label>
-                        <input type="text" class="form-control bank-name-input" value="${escapeHtml(acc.bank_name)}" placeholder="Contoh: Bank BCA" required>
-                      </div>
-                      <div class="form-group">
-                        <label>Nomor Rekening / ID</label>
-                        <input type="text" class="form-control bank-number-input" value="${escapeHtml(acc.account_number)}" placeholder="Contoh: 1234567890" required>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label>Atas Nama</label>
-                      <input type="text" class="form-control bank-holder-input" value="${escapeHtml(acc.holder_name)}" placeholder="Contoh: KAS BERSAMA SBBL" required>
-                    </div>
-                  </div>
-                `).join('')}
+                <!-- Populated dynamically by renderBankAccountsEditor() -->
               </div>
               <button type="button" class="btn btn-secondary btn-sm" onclick="window.sbblApp.addBankAccountRow()" style="width: 100%; margin-top: 4px;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Tambah Rekening Baru
+                Tambah Rekening / Metode Pembayaran Baru
               </button>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-edit-bank-accounts')">Batal</button>
-              <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+              <button type="submit" class="btn btn-primary">Simpan Semua Perubahan</button>
             </div>
           </form>
         </div>
@@ -2496,11 +2485,38 @@ class SBBLApp {
   }
 
   openEditBankAccountsModal() {
+    this.renderBankAccountsEditor();
     openModal('modal-edit-bank-accounts');
   }
 
-  openEditScheduleModal() {
-    openModal('modal-edit-schedule');
+  renderBankAccountsEditor() {
+    const editor = document.getElementById('bank-accounts-editor');
+    if (!editor) return;
+    const accounts = state.settings.bank_accounts || [];
+    editor.innerHTML = accounts.map((acc, idx) => `
+      <div class="bank-account-row" data-idx="${idx}" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <strong style="font-size: 13px;">Metode / Rekening #${idx + 1}</strong>
+          <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">
+            Hapus Metode Ini
+          </button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nama Bank / Metode Pembayaran <span class="required">*</span></label>
+            <input type="text" class="form-control bank-name-input" value="${escapeHtml(acc.bank_name)}" placeholder="Contoh: Bank SeaBank" required>
+          </div>
+          <div class="form-group">
+            <label>Nomor Rekening / ID Pembayaran <span class="required">*</span></label>
+            <input type="text" class="form-control bank-number-input" value="${escapeHtml(acc.account_number)}" placeholder="Contoh: 901283741928" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Atas Nama Penerima <span class="required">*</span></label>
+          <input type="text" class="form-control bank-holder-input" value="${escapeHtml(acc.holder_name)}" placeholder="Contoh: KAS BERSAMA SBBL" required>
+        </div>
+      </div>
+    `).join('');
   }
 
   addBankAccountRow() {
@@ -2513,21 +2529,21 @@ class SBBLApp {
     row.style.cssText = 'background: var(--bg-card-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;';
     row.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <strong style="font-size: 13px;">Rekening #${idx + 1}</strong>
-        <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">Hapus</button>
+        <strong style="font-size: 13px;">Metode / Rekening #${idx + 1}</strong>
+        <button type="button" class="btn btn-sm btn-danger" onclick="window.sbblApp.removeBankAccountRow(${idx})">Hapus Metode Ini</button>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Nama Bank / Metode</label>
-          <input type="text" class="form-control bank-name-input" placeholder="Contoh: Bank BCA" required>
+          <label>Nama Bank / Metode Pembayaran <span class="required">*</span></label>
+          <input type="text" class="form-control bank-name-input" placeholder="Contoh: Bank SeaBank" required>
         </div>
         <div class="form-group">
-          <label>Nomor Rekening / ID</label>
-          <input type="text" class="form-control bank-number-input" placeholder="Contoh: 1234567890" required>
+          <label>Nomor Rekening / ID Pembayaran <span class="required">*</span></label>
+          <input type="text" class="form-control bank-number-input" placeholder="Contoh: 901283741928" required>
         </div>
       </div>
       <div class="form-group">
-        <label>Atas Nama</label>
+        <label>Atas Nama Penerima <span class="required">*</span></label>
         <input type="text" class="form-control bank-holder-input" placeholder="Contoh: KAS BERSAMA SBBL" required>
       </div>
     `;
@@ -2539,23 +2555,45 @@ class SBBLApp {
     if (!editor) return;
     const rows = editor.querySelectorAll('.bank-account-row');
     if (rows.length <= 1) {
-      showToast('Minimal harus ada 1 rekening bank.', 'warning');
+      showToast('Minimal harus ada 1 rekening / metode pembayaran.', 'warning');
       return;
     }
     rows[idx]?.remove();
-    // Re-index labels
+    // Re-index
     editor.querySelectorAll('.bank-account-row').forEach((row, i) => {
+      row.dataset.idx = i;
       const label = row.querySelector('strong');
-      if (label) label.textContent = `Rekening #${i + 1}`;
+      if (label) label.textContent = `Metode / Rekening #${i + 1}`;
+      const delBtn = row.querySelector('.btn-danger');
+      if (delBtn) delBtn.setAttribute('onclick', `window.sbblApp.removeBankAccountRow(${i})`);
     });
+  }
+
+  async deleteBankAccount(idx) {
+    const accounts = state.settings.bank_accounts || [];
+    if (accounts.length <= 1) {
+      showToast('Minimal harus ada 1 rekening / metode pembayaran.', 'warning');
+      return;
+    }
+    const target = accounts[idx];
+    if (!confirm(`Hapus metode pembayaran / rekening "${target.bank_name}"?`)) return;
+
+    const newAccounts = accounts.filter((_, i) => i !== idx);
+    try {
+      const res = await supabaseAdapter.updateBankAccounts(newAccounts);
+      showToast(`Metode pembayaran "${target.bank_name}" berhasil dihapus.`, 'info');
+      this.render();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
   }
 
   async handleEditBankAccountsSubmit(e) {
     e.preventDefault();
     try {
       const user = state.currentUser;
-      if (user.role !== 'super_admin') {
-        showToast('Hanya Super Admin yang dapat mengubah rekening bank.', 'danger');
+      if (!['super_admin', 'admin'].includes(user.role)) {
+        showToast('Hanya pengelola kas yang dapat mengubah rekening bank / metode pembayaran.', 'danger');
         return;
       }
       const rows = document.querySelectorAll('#bank-accounts-editor .bank-account-row');
@@ -2568,9 +2606,14 @@ class SBBLApp {
           bankAccounts.push({ bank_name, account_number, holder_name });
         }
       });
+      if (bankAccounts.length === 0) {
+        showToast('Minimal harus ada 1 rekening / metode pembayaran aktif.', 'warning');
+        return;
+      }
       const res = await supabaseAdapter.updateBankAccounts(bankAccounts);
       closeModal('modal-edit-bank-accounts');
-      showToast(res.message, 'success');
+      showToast('Metode pembayaran berhasil disimpan dan disinkronkan.', 'success');
+      this.render();
     } catch (err) {
       showToast(err.message, 'danger');
     }
