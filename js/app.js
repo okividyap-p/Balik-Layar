@@ -28,6 +28,7 @@ class SBBLApp {
     this.memberFilter = 'all';
     this.auditFilter = { search: '', entity: 'all' };
     this.pendingVoidTxId = null;
+    this.pendingEditTxId = null;
     this.pendingSuspendMemberId = null;
   }
 
@@ -662,9 +663,15 @@ class SBBLApp {
                     ${isManager ? `
                       <td style="text-align: right; white-space: nowrap;">
                         ${!isVoid ? `
-                          <button class="btn btn-sm btn-danger" onclick="window.sbblApp.openVoidTxModal('${t.id}')" title="Batalkan Transaksi (Void)">
-                            Void
-                          </button>
+                          <div style="display: inline-flex; gap: 6px;">
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.sbblApp.openEditTxModal('${t.id}')" title="Edit Rincian Transaksi">
+                              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                              Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="window.sbblApp.openVoidTxModal('${t.id}')" title="Batalkan Transaksi (Void)">
+                              Void
+                            </button>
+                          </div>
                         ` : `
                           <span style="font-size: 11px; color: var(--text-muted);">Voided</span>
                         `}
@@ -1245,10 +1252,15 @@ class SBBLApp {
                     </span>
                   </td>
                   ${isManager ? `
-                    <td style="text-align: right;">
-                      <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
-                        ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      </button>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; gap: 6px;">
+                        <button class="btn btn-sm btn-outline-primary" onclick="window.sbblApp.openEditCategoryModal('${c.id}')" title="Ubah Nama Kategori">
+                          Edit
+                        </button>
+                        <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
+                          ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                      </div>
                     </td>
                   ` : ''}
                 </tr>
@@ -1278,10 +1290,15 @@ class SBBLApp {
                     </span>
                   </td>
                   ${isManager ? `
-                    <td style="text-align: right;">
-                      <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
-                        ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      </button>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; gap: 6px;">
+                        <button class="btn btn-sm btn-outline-primary" onclick="window.sbblApp.openEditCategoryModal('${c.id}')" title="Ubah Nama Kategori">
+                          Edit
+                        </button>
+                        <button class="btn btn-sm ${c.is_active ? 'btn-danger' : 'btn-success'}" onclick="window.sbblApp.toggleCategory('${c.id}')">
+                          ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                      </div>
                     </td>
                   ` : ''}
                 </tr>
@@ -1370,6 +1387,32 @@ class SBBLApp {
 
     return `
       <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Identitas & Nama Sistem Kas</h3>
+          </div>
+
+          <form id="settings-org-form" onsubmit="window.sbblApp.saveOrganizationInfo(event)">
+            <div class="form-group">
+              <label>Nama Sistem / Organisasi Kas <span class="required">*</span></label>
+              <input type="text" class="form-control" id="settings-app-name" value="${escapeHtml(state.settings.organization_info?.app_name || 'SISTEM BERBAGI BALIK LAYAR')}" ${!isSuperAdmin ? 'disabled' : ''} required>
+            </div>
+            <div class="form-group">
+              <label>Nama Singkatan (Short Name)</label>
+              <input type="text" class="form-control" id="settings-short-name" value="${escapeHtml(state.settings.organization_info?.short_name || 'SBBL')}" ${!isSuperAdmin ? 'disabled' : ''} required>
+            </div>
+            <div class="form-group">
+              <label>Tagline / Deskripsi Sistem</label>
+              <input type="text" class="form-control" id="settings-tagline" value="${escapeHtml(state.settings.organization_info?.tagline || 'Cash Management System Terpusat & Transparan')}" ${!isSuperAdmin ? 'disabled' : ''}>
+            </div>
+            ${isSuperAdmin ? `
+              <button type="submit" class="btn btn-primary btn-sm">Simpan Identitas Sistem</button>
+            ` : `
+              <div style="font-size: 11.5px; color: var(--text-muted);">Hanya Super Admin yang dapat mengubah identitas sistem.</div>
+            `}
+          </form>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <h3>Pengaturan Global Kas SBBL</h3>
@@ -1478,14 +1521,10 @@ class SBBLApp {
                   <input type="text" class="form-control" id="modal-tx-counterparty" required placeholder="Nama pembayar atau penerima">
                 </div>
                 <div class="form-group">
-                  <label>Metode Pembayaran <span class="required">*</span></label>
-                  <select class="form-control" id="modal-tx-payment-method">
-                    <option value="Transfer Bank (BCA)">Transfer Bank (BCA)</option>
-                    <option value="Transfer Bank (Mandiri)">Transfer Bank (Mandiri)</option>
-                    <option value="QRIS SBBL">QRIS SBBL</option>
-                    <option value="Tunai">Tunai</option>
-                    <option value="Lainnya">Lainnya</option>
+                  <label>Metode Pembayaran / Sumber Kas <span class="required">*</span></label>
+                  <select class="form-control" id="modal-tx-payment-method" onchange="window.sbblApp.handlePaymentMethodChange(this, 'create')">
                   </select>
+                  <input type="text" class="form-control" id="modal-tx-custom-payment-method" placeholder="Ketik nama bank/metode baru (misal: Bank SeaBank)..." style="display: none; margin-top: 8px;">
                 </div>
               </div>
 
@@ -1497,6 +1536,71 @@ class SBBLApp {
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-create-tx')">Batal</button>
               <button type="submit" class="btn btn-primary" id="btn-submit-tx">Simpan Transaksi</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Transaksi Kas -->
+      <div class="modal-backdrop" id="modal-edit-tx">
+        <div class="modal-window">
+          <div class="modal-header">
+            <h3 id="modal-edit-tx-title">Edit Transaksi Kas</h3>
+            <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-edit-tx')">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form id="form-edit-tx" onsubmit="window.sbblApp.handleEditTxSubmit(event)">
+            <input type="hidden" id="modal-edit-tx-id">
+            <div class="modal-body">
+              <div class="type-toggle-container">
+                <button type="button" class="type-toggle-btn active income" id="btn-edit-toggle-type-income" onclick="window.sbblApp.setModalEditTxType('income')">Pemasukan (+)</button>
+                <button type="button" class="type-toggle-btn expense" id="btn-edit-toggle-type-expense" onclick="window.sbblApp.setModalEditTxType('expense')">Pengeluaran (-)</button>
+              </div>
+              <input type="hidden" id="modal-edit-tx-type" value="income">
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tanggal Transaksi <span class="required">*</span></label>
+                  <input type="date" class="form-control" id="modal-edit-tx-date" required>
+                </div>
+                <div class="form-group">
+                  <label>Nominal Rupiah (Rp) <span class="required">*</span></label>
+                  <input type="number" min="1" step="1000" class="form-control" id="modal-edit-tx-amount" required placeholder="Contoh: 50000">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Kategori Kas <span class="required">*</span></label>
+                <select class="form-control" id="modal-edit-tx-category" required></select>
+              </div>
+
+              <div class="form-group">
+                <label>Deskripsi / Keterangan <span class="required">*</span></label>
+                <input type="text" class="form-control" id="modal-edit-tx-desc" required placeholder="Contoh: Iuran Kas Anggota Minggu I">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pihak Terkait (Sumber/Tujuan) <span class="required">*</span></label>
+                  <input type="text" class="form-control" id="modal-edit-tx-counterparty" required placeholder="Nama pembayar atau penerima">
+                </div>
+                <div class="form-group">
+                  <label>Metode Pembayaran / Rekening Bank <span class="required">*</span></label>
+                  <select class="form-control" id="modal-edit-tx-payment-method" onchange="window.sbblApp.handlePaymentMethodChange(this, 'edit')">
+                  </select>
+                  <input type="text" class="form-control" id="modal-edit-tx-custom-payment-method" placeholder="Ketik nama bank/metode baru (misal: Bank SeaBank)..." style="display: none; margin-top: 8px;">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Catatan Tambahan (Opsional)</label>
+                <textarea class="form-control" id="modal-edit-tx-notes" rows="2" placeholder="Catatan internal pengelola kas..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-edit-tx')">Batal</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-edit-tx">Simpan Perubahan</button>
             </div>
           </form>
         </div>
@@ -1613,6 +1717,38 @@ class SBBLApp {
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-add-category')">Batal</button>
               <button type="submit" class="btn btn-primary">Tambah Kategori</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Kategori Kas -->
+      <div class="modal-backdrop" id="modal-edit-category">
+        <div class="modal-window" style="max-width: 440px;">
+          <div class="modal-header">
+            <h3>Edit Kategori Kas</h3>
+            <button class="modal-close-btn" onclick="window.sbblApp.closeModal('modal-edit-category')">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form id="form-edit-category" onsubmit="window.sbblApp.handleEditCategorySubmit(event)">
+            <input type="hidden" id="modal-edit-cat-id">
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Nama Kategori <span class="required">*</span></label>
+                <input type="text" class="form-control" id="modal-edit-cat-name" required placeholder="Contoh: Iuran Kas, Donasi...">
+              </div>
+              <div class="form-group">
+                <label>Jenis Kas <span class="required">*</span></label>
+                <select class="form-control" id="modal-edit-cat-type" required>
+                  <option value="income">Pemasukan (Income)</option>
+                  <option value="expense">Pengeluaran (Expense)</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="window.sbblApp.closeModal('modal-edit-category')">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan Kategori</button>
             </div>
           </form>
         </div>
@@ -1941,8 +2077,57 @@ class SBBLApp {
     this.render();
   }
 
+  renderPaymentMethodOptions(selected = '') {
+    const accounts = state.settings.bank_accounts || [];
+    let html = '';
+
+    accounts.forEach(acc => {
+      const val = `Transfer Bank (${acc.bank_name})`;
+      const isSel = selected === val || selected === acc.bank_name;
+      html += `<option value="${escapeHtml(val)}" ${isSel ? 'selected' : ''}>${escapeHtml(acc.bank_name)} (${escapeHtml(acc.account_number)})</option>`;
+    });
+
+    const standard = ['QRIS SBBL', 'Kas Tunai (Fisik)'];
+    standard.forEach(std => {
+      const isSel = selected === std;
+      html += `<option value="${escapeHtml(std)}" ${isSel ? 'selected' : ''}>${escapeHtml(std)}</option>`;
+    });
+
+    if (selected && !accounts.some(a => a.bank_name === selected || `Transfer Bank (${a.bank_name})` === selected) && !standard.includes(selected)) {
+      html += `<option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)}</option>`;
+    }
+
+    html += `<option value="__CUSTOM__">+ Ketik Nama Bank / Metode Lainnya...</option>`;
+    return html;
+  }
+
+  handlePaymentMethodChange(selectEl, mode) {
+    const customIn = document.getElementById(mode === 'create' ? 'modal-tx-custom-payment-method' : 'modal-edit-tx-custom-payment-method');
+    if (selectEl.value === '__CUSTOM__') {
+      if (customIn) {
+        customIn.style.display = 'block';
+        customIn.focus();
+        customIn.required = true;
+      }
+    } else {
+      if (customIn) {
+        customIn.style.display = 'none';
+        customIn.required = false;
+      }
+    }
+  }
+
   openCreateTxModal(type = 'income') {
     this.setModalTxType(type);
+    const pmSelect = document.getElementById('modal-tx-payment-method');
+    if (pmSelect) {
+      pmSelect.innerHTML = this.renderPaymentMethodOptions();
+    }
+    const customIn = document.getElementById('modal-tx-custom-payment-method');
+    if (customIn) {
+      customIn.style.display = 'none';
+      customIn.value = '';
+    }
     openModal('modal-create-tx');
   }
 
@@ -1977,6 +2162,13 @@ class SBBLApp {
   async handleCreateTxSubmit(e) {
     e.preventDefault();
     try {
+      let pm = document.getElementById('modal-tx-payment-method').value;
+      if (pm === '__CUSTOM__') {
+        const customVal = document.getElementById('modal-tx-custom-payment-method').value.trim();
+        if (!customVal) throw new Error('Silakan ketik nama bank atau metode pembayaran baru.');
+        pm = customVal;
+      }
+
       const payload = {
         transaction_date: document.getElementById('modal-tx-date').value,
         type: document.getElementById('modal-tx-type').value,
@@ -1984,7 +2176,7 @@ class SBBLApp {
         category_id: document.getElementById('modal-tx-category').value,
         description: document.getElementById('modal-tx-desc').value,
         counterparty: document.getElementById('modal-tx-counterparty').value,
-        payment_method: document.getElementById('modal-tx-payment-method').value,
+        payment_method: pm,
         notes: document.getElementById('modal-tx-notes').value
       };
 
@@ -1992,6 +2184,92 @@ class SBBLApp {
       closeModal('modal-create-tx');
       showToast(res.message, 'success');
       e.target.reset();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  openEditTxModal(txId) {
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx) {
+      showToast('Transaksi tidak ditemukan.', 'danger');
+      return;
+    }
+    this.pendingEditTxId = txId;
+
+    document.getElementById('modal-edit-tx-id').value = tx.id;
+    document.getElementById('modal-edit-tx-date').value = tx.transaction_date;
+    document.getElementById('modal-edit-tx-amount').value = tx.amount;
+    document.getElementById('modal-edit-tx-desc').value = tx.description;
+    document.getElementById('modal-edit-tx-counterparty').value = tx.counterparty;
+    document.getElementById('modal-edit-tx-notes').value = tx.notes || '';
+
+    this.setModalEditTxType(tx.type, tx.category_id);
+
+    const pmSelect = document.getElementById('modal-edit-tx-payment-method');
+    if (pmSelect) {
+      pmSelect.innerHTML = this.renderPaymentMethodOptions(tx.payment_method);
+    }
+    const customIn = document.getElementById('modal-edit-tx-custom-payment-method');
+    if (customIn) {
+      customIn.style.display = 'none';
+      customIn.value = '';
+    }
+
+    openModal('modal-edit-tx');
+  }
+
+  setModalEditTxType(type, selectedCatId = null) {
+    const inputType = document.getElementById('modal-edit-tx-type');
+    const btnInc = document.getElementById('btn-edit-toggle-type-income');
+    const btnExp = document.getElementById('btn-edit-toggle-type-expense');
+    const catSelect = document.getElementById('modal-edit-tx-category');
+
+    if (!inputType) return;
+    inputType.value = type;
+
+    if (type === 'income') {
+      btnInc.classList.add('active');
+      btnExp.classList.remove('active');
+    } else {
+      btnExp.classList.add('active');
+      btnInc.classList.remove('active');
+    }
+
+    if (catSelect) {
+      const activeCats = state.categories.filter(c => c.type === type && c.is_active);
+      catSelect.innerHTML = activeCats.map(c => `
+        <option value="${c.id}" ${c.id === selectedCatId ? 'selected' : ''}>${escapeHtml(c.name)}</option>
+      `).join('');
+    }
+  }
+
+  async handleEditTxSubmit(e) {
+    e.preventDefault();
+    try {
+      const txId = document.getElementById('modal-edit-tx-id').value;
+      let pm = document.getElementById('modal-edit-tx-payment-method').value;
+      if (pm === '__CUSTOM__') {
+        const customVal = document.getElementById('modal-edit-tx-custom-payment-method').value.trim();
+        if (!customVal) throw new Error('Silakan ketik nama bank atau metode pembayaran baru.');
+        pm = customVal;
+      }
+
+      const payload = {
+        transaction_date: document.getElementById('modal-edit-tx-date').value,
+        type: document.getElementById('modal-edit-tx-type').value,
+        amount: document.getElementById('modal-edit-tx-amount').value,
+        category_id: document.getElementById('modal-edit-tx-category').value,
+        description: document.getElementById('modal-edit-tx-desc').value,
+        counterparty: document.getElementById('modal-edit-tx-counterparty').value,
+        payment_method: pm,
+        notes: document.getElementById('modal-edit-tx-notes').value
+      };
+
+      const res = await supabaseAdapter.updateTransaction(txId, payload);
+      closeModal('modal-edit-tx');
+      showToast(res.message, 'success');
+      this.pendingEditTxId = null;
     } catch (err) {
       showToast(err.message, 'danger');
     }
@@ -2108,6 +2386,45 @@ class SBBLApp {
     try {
       const res = await supabaseAdapter.toggleCategoryStatus(categoryId);
       showToast(`Status kategori diperbarui (${res.is_active ? 'Aktif' : 'Non-Aktif'}).`, 'info');
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  openEditCategoryModal(catId) {
+    const cat = state.categories.find(c => c.id === catId);
+    if (!cat) return;
+    document.getElementById('modal-edit-cat-id').value = cat.id;
+    document.getElementById('modal-edit-cat-name').value = cat.name;
+    document.getElementById('modal-edit-cat-type').value = cat.type;
+    openModal('modal-edit-category');
+  }
+
+  async handleEditCategorySubmit(e) {
+    e.preventDefault();
+    try {
+      const catId = document.getElementById('modal-edit-cat-id').value;
+      const name = document.getElementById('modal-edit-cat-name').value;
+      const type = document.getElementById('modal-edit-cat-type').value;
+
+      const res = await supabaseAdapter.updateCategory(catId, name, type);
+      closeModal('modal-edit-category');
+      showToast(res.message, 'success');
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async saveOrganizationInfo(e) {
+    e.preventDefault();
+    try {
+      const app_name = document.getElementById('settings-app-name').value;
+      const short_name = document.getElementById('settings-short-name').value;
+      const tagline = document.getElementById('settings-tagline').value;
+
+      const res = await supabaseAdapter.updateOrganizationInfo({ app_name, short_name, tagline });
+      showToast(res.message, 'success');
+      this.render();
     } catch (err) {
       showToast(err.message, 'danger');
     }

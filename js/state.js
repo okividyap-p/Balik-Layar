@@ -28,8 +28,15 @@ class AppState {
       bank_accounts: [
         { bank_name: 'Bank Central Asia (BCA)', account_number: '8720194821', holder_name: 'KAS BERSAMA SBBL' },
         { bank_name: 'Bank Mandiri', account_number: '1420019283741', holder_name: 'KAS BERSAMA SBBL' },
-        { bank_name: 'QRIS SBBL', account_number: 'NMID-938172948172', holder_name: 'KAS SBBL' }
+        { bank_name: 'Bank SeaBank', account_number: '901283741928', holder_name: 'KAS BERSAMA SBBL' },
+        { bank_name: 'QRIS SBBL', account_number: 'NMID-938172948172', holder_name: 'KAS SBBL' },
+        { bank_name: 'Kas Tunai (Fisik)', account_number: 'KAS-FISIK-01', holder_name: 'Bendahara SBBL' }
       ],
+      organization_info: {
+        app_name: 'SISTEM BERBAGI BALIK LAYAR',
+        short_name: 'SBBL',
+        tagline: 'Cash Management System Terpusat & Transparan'
+      },
       weekly_contribution_config: {
         amount: 10000,
         day: 'Thursday',

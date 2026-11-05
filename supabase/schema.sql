@@ -863,6 +863,7 @@ VALUES
     ('bank_accounts', '[
         {"bank_name": "Bank Central Asia (BCA)", "account_number": "8720194821", "holder_name": "KAS BERSAMA SBBL"},
         {"bank_name": "Bank Mandiri", "account_number": "1420019283741", "holder_name": "KAS BERSAMA SBBL"},
+        {"bank_name": "Bank SeaBank", "account_number": "901283741928", "holder_name": "KAS BERSAMA SBBL"},
         {"bank_name": "QRIS SBBL", "account_number": "NMID-938172948172", "holder_name": "KAS SBBL"}
     ]', 'Daftar rekening bank / sumber kas resmi'),
     ('weekly_contribution_config', '{"amount": 10000, "day": "Thursday", "time": "09:00", "timezone": "Asia/Makassar"}', 'Aturan iuran mingguan')

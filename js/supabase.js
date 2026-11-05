@@ -206,6 +206,9 @@ class SupabaseAdapter {
           if (item.key === 'weekly_contribution_config' && item.value) {
             state.settings.weekly_contribution_config = item.value;
           }
+          if (item.key === 'organization_info' && item.value) {
+            state.settings.organization_info = item.value;
+          }
         });
       }
 
@@ -344,6 +347,80 @@ class SupabaseAdapter {
 
     state.notify();
     return { success: true, message: 'Transaksi berhasil dicatat ke dalam kas bersama.' };
+  }
+
+  // ============================================================================
+  // UPDATE TRANSACTION (Super Admin & Admin)
+  // ============================================================================
+  async updateTransaction(txId, payload) {
+    const user = state.currentUser;
+    if (!user || user.status !== 'approved') {
+      throw new Error('Akses ditolak: Akun belum terverifikasi atau tidak memiliki izin.');
+    }
+    if (!['super_admin', 'admin'].includes(user.role)) {
+      throw new Error('Akses ditolak: Hanya pengelola yang dapat mengubah transaksi.');
+    }
+
+    const amount = Number(payload.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new Error('Nominal transaksi harus berupa bilangan positif.');
+    }
+
+    if (this.isLiveMode()) {
+      const updateData = {
+        transaction_date: payload.transaction_date,
+        description: payload.description,
+        counterparty: payload.counterparty,
+        category_id: payload.category_id,
+        type: payload.type,
+        amount: amount,
+        payment_method: payload.payment_method || 'Transfer Bank',
+        notes: payload.notes || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await this.client
+        .from('transactions')
+        .update(updateData)
+        .eq('id', txId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.client.from('audit_logs').insert([{
+        actor_id: user.id,
+        actor_email: user.email,
+        action: 'UPDATE_TRANSACTION',
+        entity: 'transactions',
+        details: { transaction_id: txId, ...updateData }
+      }]);
+
+      await this.syncAllData();
+      return { success: true, message: 'Transaksi berhasil diperbarui.', transaction: data };
+    }
+
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx) throw new Error('Transaksi tidak ditemukan.');
+
+    tx.transaction_date = payload.transaction_date;
+    tx.description = payload.description;
+    tx.counterparty = payload.counterparty;
+    tx.category_id = payload.category_id;
+    tx.type = payload.type;
+    tx.amount = amount;
+    tx.payment_method = payload.payment_method || 'Transfer Bank';
+    tx.notes = payload.notes || '';
+    tx.updated_at = new Date().toISOString();
+
+    state.logAudit('UPDATE_TRANSACTION', 'transactions', {
+      transaction_id: txId,
+      amount: tx.amount,
+      description: tx.description
+    });
+
+    state.notify();
+    return { success: true, message: 'Transaksi berhasil diperbarui.' };
   }
 
   // ============================================================================
@@ -625,6 +702,35 @@ class SupabaseAdapter {
     return { success: true, is_active: newActive };
   }
 
+  async updateCategory(categoryId, name, type) {
+    if (!name?.trim()) throw new Error('Nama kategori wajib diisi.');
+    const user = state.currentUser;
+    if (!user || !['super_admin', 'admin'].includes(user.role)) {
+      throw new Error('Hanya pengelola yang berhak mengubah kategori.');
+    }
+
+    if (this.isLiveMode()) {
+      const { data, error } = await this.client
+        .from('categories')
+        .update({ name: name.trim(), type })
+        .eq('id', categoryId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      await this.syncAllData();
+      return { success: true, message: 'Kategori berhasil diperbarui.', category: data };
+    }
+
+    const cat = state.categories.find(c => c.id === categoryId);
+    if (!cat) throw new Error('Kategori tidak ditemukan.');
+    cat.name = name.trim();
+    cat.type = type;
+    state.logAudit('UPDATE_CATEGORY', 'categories', { id: categoryId, name: cat.name, type: cat.type });
+    state.notify();
+    return { success: true, message: 'Kategori berhasil diperbarui.' };
+  }
+
   async updateOpeningBalance(amount) {
     const num = Number(amount);
     if (isNaN(num) || num < 0) throw new Error('Saldo awal harus positif atau 0.');
@@ -714,6 +820,41 @@ class SupabaseAdapter {
     state.logAudit('UPDATE_SCHEDULE_CONFIG', 'system_settings', newConfig);
     state.notify();
     return { success: true, message: 'Konfigurasi jadwal iuran berhasil diperbarui.' };
+  }
+
+  // ============================================================================
+  // UPDATE ORGANIZATION INFO (Super Admin only)
+  // ============================================================================
+  async updateOrganizationInfo(info) {
+    const user = state.currentUser;
+    if (!user || user.role !== 'super_admin') {
+      throw new Error('Hanya Super Admin yang berhak mengubah identitas organisasi / nama kas.');
+    }
+
+    const orgInfo = {
+      app_name: (info.app_name || '').trim() || 'SISTEM BERBAGI BALIK LAYAR',
+      short_name: (info.short_name || '').trim() || 'SBBL',
+      tagline: (info.tagline || '').trim() || 'Cash Management System Terpusat & Transparan'
+    };
+
+    if (this.isLiveMode()) {
+      const { error } = await this.client
+        .from('system_settings')
+        .upsert({
+          key: 'organization_info',
+          value: orgInfo,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      await this.syncAllData();
+      return { success: true, message: 'Identitas sistem kas berhasil diperbarui.' };
+    }
+
+    state.settings.organization_info = orgInfo;
+    state.logAudit('UPDATE_ORGANIZATION_INFO', 'system_settings', orgInfo);
+    state.notify();
+    return { success: true, message: 'Identitas sistem kas berhasil diperbarui.' };
   }
 }
 
