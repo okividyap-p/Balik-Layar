@@ -13,9 +13,9 @@
 export const SUPABASE_CONFIG = {
   // Masukkan Supabase Project URL Anda di sini
   // Contoh: 'https://abcdefghijklmnop.supabase.co'
-  URL: '',
+  URL: 'https://wqxxhbqhjsmaxcpstqre.supabase.co',
 
   // Masukkan Supabase Public / Anon Key Anda di sini
   // Contoh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  ANON_KEY: ''
+  ANON_KEY: 'sb_publishable_XFrAVPxJYapDNf2A_t6mfA_U9vUqqX2'
 };
